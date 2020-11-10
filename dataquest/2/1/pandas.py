@@ -90,3 +90,62 @@ rank_change_desc = f500["rank_change"].describe()
 # Selecting top values for countries
 industry_usa = f500.loc[f500["country"] == "USA", "industry"].value_counts().head(2)
 sector_china = f500.loc[f500["country"] == "China", "sector"].value_counts().head(3)
+
+# Intermediate
+# read the data set into a pandas dataframe
+# replace 0 values in the "previous_rank" column with NaN
+f500.loc[f500["previous_rank"] == 0, "previous_rank"] = np.nan
+# select
+f500_selection = f500[["rank", "revenues", "revenue_change"]].head(5)
+
+# Integer index select
+fifth_row = f500.iloc[4]
+company_value = f500["company"].iloc[0]
+
+first_three_rows = f500[0:3]
+first_seventh_row_slice = f500.iloc[[0, 6], 0:5]
+
+# Select null using boolean index
+null_previous_rank = f500.loc[f500["previous_rank"].isnull(), ["company", "rank", "previous_rank"]]
+top5_null_prev_rank = null_previous_rank.iloc[0:5]
+
+# Combining data of different size will join on indexes
+previously_ranked = f500[f500["previous_rank"].notnull()]
+rank_change = previously_ranked["previous_rank"] - previously_ranked["rank"]
+f500["rank_change"] = rank_change
+
+# Boolean logic on boolean index
+large_revenue = f500["revenues"] > 100000
+negative_profits = f500["profits"] < 0
+combined = large_revenue & negative_profits
+big_rev_neg_profit = f500.loc[combined]
+
+brazil_venezuela = f500[(f500["country"] == "Brazil") | (f500["country"] == "Venezuela")]
+tech_outside_usa = f500[(f500["sector"] == "Technology") & (f500["country"] != "USA")].head(5)
+
+selected_rows = f500[f500["country"] == "Japan"]
+sorted_rows = selected_rows.sort_values("employees", ascending = False)
+top_japanese_employer = sorted_rows.iloc[0]["company"]
+
+# Create an empty dictionary to store the results
+top_employer_by_country = {}
+
+# Create an array of unique countries
+countries = f500["country"].unique()
+
+# Use a for loop to iterate over the countries and find top employers
+for c in countries:
+    # Use boolean comparison to select only rows that
+    # correspond to a specific country
+    selected_rows = f500[f500["country"] == c]
+    top = selected_rows.sort_values("employees", ascending = False).iloc[0]["company"]
+    top_employer_by_country[c] = top
+
+# Top ROA
+f500["roa"] = f500["profits"]/f500["assets"]
+top_roa_by_sector = {}
+for s in f500["sector"]:
+    sector_companies = f500[f500["sector"] == s]
+    sorted_values = sector_companies.sort_values("roa", ascending = False)
+    top_company = sorted_values.iloc[0]["company"]
+    top_roa_by_sector[s] = top_company
