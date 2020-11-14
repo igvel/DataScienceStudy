@@ -245,3 +245,56 @@ iteration_two_rmse = mean_squared_error(test_two["price"], test_two["predicted_p
 avg_rmse = np.mean([iteration_two_rmse, iteration_one_rmse])
 
 print(iteration_one_rmse, iteration_two_rmse, avg_rmse)
+
+# k-fold validation
+dc_listings.loc[dc_listings.index[0:745], "fold"] = 1
+dc_listings.loc[dc_listings.index[745:1490], "fold"] = 2
+dc_listings.loc[dc_listings.index[1490:2234], "fold"] = 3
+dc_listings.loc[dc_listings.index[2234:2978], "fold"] = 4
+dc_listings.loc[dc_listings.index[2978:3723], "fold"] = 5
+
+print(dc_listings['fold'].value_counts())
+print("\n Num of missing values: ", dc_listings['fold'].isnull().sum())
+
+fold_ids = [1,2,3,4,5]
+def train_and_validate(df, folds):
+    fold_rmses = []
+    for fold in folds:
+        # Train
+        model = KNeighborsRegressor()
+        train = df[df["fold"] != fold]
+        test = df[df["fold"] == fold].copy()
+        model.fit(train[["accommodates"]], train["price"])
+        # Predict
+        labels = model.predict(test[["accommodates"]])
+        test["predicted_price"] = labels
+        mse = mean_squared_error(test["price"], test["predicted_price"])
+        rmse = mse**(1/2)
+        fold_rmses.append(rmse)
+    return(fold_rmses)
+
+rmses = train_and_validate(dc_listings, fold_ids)
+print(rmses)
+avg_rmse = np.mean(rmses)
+print(avg_rmse)
+
+# k-fold validation using SciKit
+from sklearn.model_selection import cross_val_score, KFold
+kf = KFold(5, shuffle=True, random_state=1)
+model = KNeighborsRegressor()
+mses = cross_val_score(model, dc_listings[["accommodates"]], dc_listings["price"], scoring="neg_mean_squared_error", cv=kf)
+rmses = np.sqrt(np.absolute(mses))
+avg_rmse = np.mean(rmses)
+print(rmses)
+print(avg_rmse)
+
+num_folds = [3, 5, 7, 9, 10, 11, 13, 15, 17, 19, 21, 23]
+
+for fold in num_folds:
+    kf = KFold(fold, shuffle=True, random_state=1)
+    model = KNeighborsRegressor()
+    mses = cross_val_score(model, dc_listings[["accommodates"]], dc_listings["price"], scoring="neg_mean_squared_error", cv=kf)
+    rmses = np.sqrt(np.absolute(mses))
+    avg_rmse = np.mean(rmses)
+    std_rmse = np.std(rmses)
+    print(str(fold), "folds: ", "avg RMSE: ", str(avg_rmse), "std RMSE: ", str(std_rmse))
