@@ -229,3 +229,47 @@ second_term = np.dot(
     )
 ols_estimation = np.dot(first_term, second_term)
 print(ols_estimation)
+
+## Feature engineering
+data = pd.read_csv('AmesHousing.txt', delimiter="\t")
+train = data[0:1460]
+test = data[1460:]
+
+train_null_counts = train.isnull().sum()
+print(train_null_counts)
+# Remove null columns
+df_no_mv = train[train_null_counts[train_null_counts==0].index]
+# Or
+df_no_mv = train.dropna(axis = 'columns')
+
+# Convert text columns to categorical data type
+text_cols = df_no_mv.select_dtypes(include=['object']).columns
+
+for col in text_cols:
+    print(col+":", len(train[col].unique()))
+    train[col] = train[col].astype('category')
+
+print(train['Utilities'].cat.codes.value_counts())
+
+# Create dummy columns for categorical columns.
+for col in text_cols:
+    col_dummies = pd.get_dummies(train[col])
+    train = pd.concat([train, col_dummies], axis=1)
+    del train[col]
+
+# Create difference column for meaningful value for regression
+train['years_until_remod'] = train['Year Remod/Add'] - train['Year Built']
+
+# Imputation of missing values
+train_null_counts = train.isnull().sum()
+
+# Select columns with missing values
+df_missing_values = train[train_null_counts[(train_null_counts>0) & (train_null_counts<584)].index]
+
+print(df_missing_values.isnull().sum())
+print(df_missing_values.dtypes)
+
+# Replace missing floats with Mean value
+float_cols = df_missing_values.select_dtypes(include=['float'])
+float_cols = float_cols.fillna(float_cols.mean())
+print(float_cols.isnull().sum())
