@@ -1,2 +1,2 @@
 # DataScienceStudy
-Data Science Study
+Data Science Study using Python
